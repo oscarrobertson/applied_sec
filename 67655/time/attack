@@ -186,7 +186,7 @@ def sampling(N,w,p,knownBits,numSamples):
     for i in range(4):
         totals[i] /= counts[i+1]
     #print totals
-    return (abs(totals[0]-totals[1]),abs(totals[2]-totals[3]))
+    return (totals[0]-totals[1],totals[2]-totals[3])
 
 
 
@@ -202,26 +202,30 @@ if ( __name__ == "__main__" ) :
     n = int(n, 16)
     e = int(e, 16)
 
-    m = 73
+    m = 730
     c = pow(m,e,n)
-    print interact(format(c,"X"))
-    key = '9DC95C81A632262C'
+
+    key='27725720698C898B'
+    # print interact(format(c,"X"))
+    # key = '27725720698C8982'
     key = int(key,16)
-    print key
-    print egcd(e,key)
+    # print key
+    # print egcd(e,key)
     print pow(c,key,n)
-    key+=1
-    print key
-    print egcd(e,key)
-    print pow(c,key,n)
-    key+=1
-    print key
-    print egcd(e,key)
-    print pow(c,key,n)
-    key+=1
-    print key
-    print egcd(e,key)
-    print pow(c,key,n)
+    # key+=1
+    # print key
+    # print egcd(e,key)
+    # print pow(c,key,n)
+    # key+=1
+    # print key
+    # print egcd(e,key)
+    # print pow(c,key,n)
+    # key+=1
+    # print key
+    # print egcd(e,key)
+    # print pow(c,key,n)
+
+
 
     p2 = 1
     w = 1
@@ -231,14 +235,18 @@ if ( __name__ == "__main__" ) :
     p_1 = -gcd[1]
     w = -gcd[2]
 
+
+
+
     threshold = 25
     knownBits = '1'
+    #samples = [int(random.random()*n) for x in range(5000)]
     while len(knownBits) < 63:
         print "round number: " + str(len(knownBits))
-        (m1m2,m3m4,sampleRuns) = (0,0,0)
-        while (abs(m1m2 - m3m4) < threshold) and sampleRuns < 5:
-            (m1m2,m3m4) = sampling(n,w,p,knownBits,10000)
-            sampleRuns+=1
+        (m1m2,m3m4,samples) = (0,0,2000)
+        while (abs(m1m2 - m3m4) < threshold) and samples <= 20000:
+            (m1m2,m3m4) = sampling(n,w,p,knownBits,samples)
+            samples+=2000
         print (m1m2,m3m4)
 
         if m1m2 > m3m4:
@@ -250,9 +258,19 @@ if ( __name__ == "__main__" ) :
 
     print knownBits
     k0 = int(knownBits+'0',2)
-    k1 = int(knownBits+'1',2)
-    print k0
-    print k1
-    print pow(c,k0,n)
-    print pow(c,k1,n)
+    print format(k0,"X")
+    print format(k0+1,"X")
+
+    for k in range(k0-100, k0+100):
+        if pow(c,k,n) == m:
+            print "Foundkey!"
+            print k
+            print format(k,"X")
+
+    # k1 = int(knownBits+'1',2)
+    # print format(k0,"X")
+    # print pow(c,k0,n)
+    # print format(k1,"X")
+    # print pow(c,k1,n)
+
 
