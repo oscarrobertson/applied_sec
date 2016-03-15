@@ -1,11 +1,65 @@
 Q.1 Consider an example where N = 551, e = 5, d = 101 and c = 243.  Using
     your own words, briefly explain and illustrate the working principle of
     this attack (i.e., how and why it works).
+
+The key to the attack is the malleability of RSA and error codes giving 
+away information about the resulting decryption of modified cipertexts. 
+Given that messages must contain two leading zero bits they must be 
+< B where B = 2^(k-2) and k = bit length of N.
+An error code of 2 (when the wrong label is passed) indicates that the 
+resulting decrypted message from the given cipertext is < B. An error 
+code of 1 indicates that the decrypted cipertext is >= B. We test the 
+error codes on modified cipertexts which decrypt to the message multiplied 
+by some factor, f, this is done by multiplying c by f^e.
+
+The first factor is f1. Starting at 2 we continue to multiply f1 by two 
+until the oracle indicates that f1*m >= B, which in this case occurs at 
+f1 = 128 This means that:
+
+	B/2 <= (f1/2)*m < B
+	128 <= 64*m 	< 256
+	2 	<= m 		< 4
+
+The next step, using factor f2, further narrows the range in which m can 
+lie. In this case the range is already down to only two so this step halts 
+before doing anything, f2 starts and ends at 192 and we know:
+
+	N 	<= f2*m 	< N + B
+	551	<= 192*m 	< 807
+	2	<= m 		< 4
+
+The third step, on each round, raises the minimum bound on the potential 
+message range or lowers the upper bound until only one possible message 
+remains, in this case m = 3.
+
 Q.2 To prevent the attack, the vendor suggests altering the software: the
     idea is that no matter what error occurs, the same error code will be
     produced.  Explain whether (and why, or why not) this change alone is
     sufficient.
+
+This would be sufficient to stop this specific attack since the attacker is 
+no longer able to discern information about the plaintext from error codes.
+This is, in a way, security through obscurity and if the attacker were 
+somehow able to get information about the decryption being < B (such as 
+timing) then they would still be able to perform this attack. For better 
+security the system should be changed to perform integrity checks earlier in 
+the process to prevent leaking plaintext information.  
+
 Q.3 Ignoring the use of countermeasures, carefully detail any situations
     where your implementation of this attack could fail; given more time,
     what could you do to resolve this?
+
+
+
 Q.5 Explain how the concept of plaintext awareness relates to this attack.
+
+Plaintext awareness means that an encrypter must be aware of the contents of 
+a message in order to efficiently generate a valid cipertext. RSA is malleable 
+and therefore this scheme uses padding in order to introduce plaintext 
+awareness. The issue with this system is that the label passed with the 
+cipertext need not be valid in order to garner the information needed for the 
+attack and is therefore not providing any security in this case. If the validity 
+of the whole cipertext (including the label) was checked earlier then this 
+attack owuld not be possible in this manner since the attack is unable to generate 
+valid labels for their modified ciphertexts and the oracle queries would simply 
+be rejected.

@@ -1,0 +1,258 @@
+#!/usr/bin/env python
+
+import sys , subprocess, os.path, math, hashlib,random
+
+MAXLONG = 18446744073709551616
+
+def make64bit(n):
+    return n%MAXLONG
+
+def numberToBase(n, b):
+    if n == 0:
+        return [0]
+    digits = []
+    while n:
+        digits.append(int(n % b))
+        n /= b
+    return digits
+
+def getlimbn(op, n):
+    limbs = numberToBase(op, MAXLONG)
+    if len(limbs) <= n:
+        return 0
+    else:
+        return limbs[n]
+
+def mpz_size(op):
+    return len(numberToBase(op, MAXLONG))
+
+def interact( c ) :
+    # Send c to attack target.
+    target_in.write( "%s\n" % ( c ) ) ; target_in.flush()
+    # Receive r from attack target.
+    time =  int(target_out.readline().strip ()) 
+    m = target_out.readline().strip () 
+    return (time, m)
+
+def ceil_divide(x, y):
+    return (x + (-x % y)) // y
+
+def readConf(confName):
+    pathStr = os.path.abspath(confName)
+    with open(pathStr, "r") as f:
+        n = f.readline().strip()
+        e = f.readline().strip()
+    return (n, e)
+
+def zeroPad(hexString, expectedLength):
+    zeros = expectedLength- len(hexString)
+    for i in range(zeros):
+        hexString = '0' + hexString
+    return hexString
+
+def egcd(a, b):
+    x,y, u,v = 0,1, 1,0
+    while a != 0:
+        q, r = b//a, b%a
+        m, n = x-u*q, y-v*q
+        b,a, x,y, u,v = a,r, u,v, m,n
+    gcd = b
+    return gcd, x, y
+
+def montW(N):
+    t = 1
+    N0 = getlimbn(N, 0)
+    for i in range(1,64):
+        t = make64bit(t*t*N0)
+    t = make64bit(-t)
+    return t
+
+def montP2(N):
+    t = 1
+    for i in range(1, 2*64*mpz_size(N)+1):
+        t = (t + t)%N
+    return t
+
+# def montMul(x, y, N, w, p2):
+#     r = 0
+#     x0 = getlimbn(x, 0)
+#     w0 = getlimbn(w, 0)
+#     for i in range(mpz_size(N)):
+#         r0 = getlimbn(r, 0)
+#         yi = getlimbn(y, i)
+#         u = make64bit((r0 + yi * x0) * w0)
+#         r = (r + x*yi + u*N)/MAXLONG
+#     if r >= N:
+#         r = r-N
+#     return r
+
+## use gcd instead of this to find p from p^2
+def find_p(p2, N, w):
+    # r = 0
+    # x0 = getlimbn(p2, 0)
+    # w0 = getlimbn(w, 0)
+    # for i in range(mpz_size(N)):
+    #     r0 = getlimbn(r, 0)
+    #     yi = getlimbn(1, i)
+    #     u = make64bit((r0 + yi * x0) * w0)
+    #     r = (r + p2*yi + u*N)/MAXLONG
+    # if r >= N:
+    #     r = r-N
+    # return r
+    return 1 << (len(format(N,'b')))
+
+def montMul(x, y, N, w, p):
+    r0 = x*y
+    r1 = r0 + (r0 * w%p)*N
+    r = r1 >> len(format(p,'b'))-1
+    if r >= N:
+        r = r-N
+    return r
+
+def montMulUsesReduction(x, y, N, w, p):
+    r0 = x*y
+    r1 = r0 + (r0 * w%p)*N
+    r = r1 >> len(format(p,'b'))-1
+    if r >= N:
+        #r = r-N
+        return True
+    return False
+
+# def montExp(x, y, N, w, p2):
+#     t_ = montMul(1, p2%N, N, w, p2)
+#     x_ = montMul(x, p2%N, N, w, p2)
+#     for i in format(y, 'b'):
+#         t_ = montMul(t_, t_, N, w, p2)
+#         if i == '1':
+#             t_ = montMul(t_, x_, N, w, p2)
+#     return montMul(t_, 1, N, w, p2)
+
+def montExp(a, e, N, w, p):
+    a_ = (a*p)%N
+    x_ = p%N
+    for i in format(e, 'b'):
+        x_ = montMul(x_,x_,N,w,p)
+        if i == '1':
+            x_ = montMul(x_,a_,N,w,p)
+    return montMul(x_,1,N,w,p)
+
+#returns (mtemp, a_residual)
+def montExpPartial(a,knownBits,N,w,p):
+    a_ = (a*p)%N
+    x_ = p%N
+    for i in knownBits:
+        x_ = montMul(x_,x_,N,w,p)
+        if i == '1':
+            x_ = montMul(x_,a_,N,w,p)
+    x_ = montMul(x_,x_,N,w,p)
+    return (x_,a_)
+    #return montMul(x_,1,N,w,p)
+
+#returns message set {1,2}
+def assumek1(mtemp,a_residual,N,w,p):
+    mtemp = montMul(mtemp,a_residual,N,w,p)
+    if montMulUsesReduction(mtemp,mtemp,N,w,p):
+        return 1
+    else:
+        return 2
+
+#returns message set {3,4}
+def assumek0(mtemp,N,w,p):
+    if montMulUsesReduction(mtemp,mtemp,N,w,p):
+        return 3
+    else:
+        return 4
+
+# returns 3 tuple of message classes and timing
+# ({1,2}, {3,4}, timing)
+def classAndTime(c,knownBits,N,w,p):
+    (mtemp, a_residual) = montExpPartial(c,knownBits,N,w,p)
+    (timing,m) = interact(format(c,"X"))
+    return (assumek1(mtemp,a_residual,N,w,p),assumek0(mtemp,N,w,p),timing)
+
+def sampling(N,w,p,knownBits,numSamples):
+    #[0] counts total and then each class is counted in its index
+    counts = [0,0,0,0,0]
+    totals = [0,0,0,0]
+    for i in range(numSamples):
+        c = int(random.random()*N)
+        #print c
+        (c1,c2,timing) = classAndTime(c,knownBits,N,w,p)
+        counts[0] += 1
+        counts[c1] += 1
+        totals[c1-1] += timing
+        counts[c2] += 1
+        totals[c2-1] += timing
+    for i in range(4):
+        totals[i] /= counts[i+1]
+    #print totals
+    return (abs(totals[0]-totals[1]),abs(totals[2]-totals[3]))
+
+
+
+if ( __name__ == "__main__" ) :
+    # Produce a sub -process representing the attack target.
+    target = subprocess.Popen( args = os.path.abspath(sys.argv[1]), stdout = subprocess.PIPE , stdin = subprocess.PIPE )
+    # Construct handles to attack target standard input and output.
+    target_out = target.stdout
+    target_in = target.stdin
+
+    (n, e) = readConf(sys.argv[2])
+
+    n = int(n, 16)
+    e = int(e, 16)
+
+    m = 73
+    c = pow(m,e,n)
+    print interact(format(c,"X"))
+    key = '9DC95C81A632262C'
+    key = int(key,16)
+    print key
+    print egcd(e,key)
+    print pow(c,key,n)
+    key+=1
+    print key
+    print egcd(e,key)
+    print pow(c,key,n)
+    key+=1
+    print key
+    print egcd(e,key)
+    print pow(c,key,n)
+    key+=1
+    print key
+    print egcd(e,key)
+    print pow(c,key,n)
+
+    p2 = 1
+    w = 1
+    p = find_p(p2, n, w)
+    gcd = egcd(p,n)
+
+    p_1 = -gcd[1]
+    w = -gcd[2]
+
+    threshold = 25
+    knownBits = '1'
+    while len(knownBits) < 63:
+        print "round number: " + str(len(knownBits))
+        (m1m2,m3m4,sampleRuns) = (0,0,0)
+        while (abs(m1m2 - m3m4) < threshold) and sampleRuns < 5:
+            (m1m2,m3m4) = sampling(n,w,p,knownBits,10000)
+            sampleRuns+=1
+        print (m1m2,m3m4)
+
+        if m1m2 > m3m4:
+            print 1
+            knownBits += '1'
+        else:
+            print 0
+            knownBits += '0'
+
+    print knownBits
+    k0 = int(knownBits+'0',2)
+    k1 = int(knownBits+'1',2)
+    print k0
+    print k1
+    print pow(c,k0,n)
+    print pow(c,k1,n)
+
