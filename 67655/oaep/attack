@@ -134,36 +134,6 @@ def string_xor(a, b):
 
 ## END OF FUNCTIONS FROM PYTHON PCKS REPO
 
-# 3. EME-OAEP decoding:
-
-#       a. If the label L is not provided, let L be the empty string. Let
-#          lHash = Hash(L), an octet string of length hLen (see the note
-#          in Section 7.1.1).
-
-#       b. Separate the encoded message EM into a single octet Y, an octet
-#          string maskedSeed of length hLen, and an octet string maskedDB
-#          of length k - hLen - 1 as
-
-#             EM = Y || maskedSeed || maskedDB.
-
-#       c. Let seedMask = MGF(maskedDB, hLen).
-
-#       d. Let seed = maskedSeed \xor seedMask.
-
-#       e. Let dbMask = MGF(seed, k - hLen - 1).
-
-#       f. Let DB = maskedDB \xor dbMask.
-
-#       g. Separate DB into an octet string lHash' of length hLen, a
-#          (possibly empty) padding string PS consisting of octets with
-#          hexadecimal value 0x00, and a message M as
-
-#             DB = lHash' || PS || 0x01 || M.
-
-#          If there is no octet with hexadecimal value 0x01 to separate PS
-#          from M, if lHash does not equal lHash', or if Y is nonzero,
-#          output "decryption error" and stop.  (See the note below.)
-
 def OAEP_decode(m_hex, l):
     l_hash_object = hashlib.sha1(l)
     l_hash = l_hash_object.digest()
@@ -181,7 +151,7 @@ def OAEP_decode(m_hex, l):
 
     dbMask = mgf1(seed, k-hLen - 1)
     DB = string_xor(maskedDB, dbMask)
-    print "Padded message:", DB.encode("hex") 
+    #print "Padded message:", DB.encode("hex") 
     lHash = DB[0:hLen]
     m_zeros = DB[hLen:]
     m_start = 0
@@ -217,4 +187,4 @@ if ( __name__ == "__main__" ) :
     m_hex = format(m, "x")
     m = OAEP_decode(m_hex, l)
     print "Oracle uses:", str(k)
-    print "Unpadded message:", m
+    print "Unpadded message:", format(int(m,16),"X")

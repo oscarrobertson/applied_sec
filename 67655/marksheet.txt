@@ -16,7 +16,7 @@
 So that we can calibrate and improve the assignment in the future, give us
 a rough idea how long (in hours) you spent on it *in total*:
 
-effort : [...] hours
+effort : [40] hours
 
 -------------------------------------------------------------------------------
 
@@ -28,7 +28,11 @@ by the assignment description of course).  Let us know what third-party
 source code or resources you used (if any) so it's clear what's your work 
 and what isn't:
 
-[...]
+[http://archiv.infsec.ethz.ch/education/fs08/secsem/Manger01.pdf,
+https://github.com/bdauvergne/python-pkcs1/tree/master/pkcs1,
+http://www.cs.sjsu.edu/faculty/stamp/students/article.html,
+http://www.cs.jhu.edu/~fabian/courses/CS600.624/Timing-full.pdf,
+http://algnt.satyukov.ru/books/j37acmon.pdf]
 
 -------------------------------------------------------------------------------
 
@@ -47,7 +51,7 @@ the style or efficiency of a solution.
               - solution quality wrt. efficiency, robustness etc.    ( 30%)
               - analysis questions                                   ( 30%)
 
-              target material : [...]
+              target material : [F46BC53267711102FF042FE317377C57A13FC976624331AB494965BE1CFBEA4F087044761AA44D83]
 
 [?] Stage 2 : an attack based on execution time
 
@@ -55,7 +59,7 @@ the style or efficiency of a solution.
               - solution quality wrt. efficiency, robustness etc.    ( 30%)
               - analysis questions                                   ( 30%)
 
-              target material : [...]
+              target material : [27725720698C898B]
 
 [?] Stage 3 : an attack based on an injected fault
 

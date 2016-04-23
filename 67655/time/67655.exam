@@ -2,13 +2,64 @@ Q.1 The vendor of the attack target is concerned that news of this attack
     could scare off potential customers; they will make any alteration
     necessary (in software or hardware) to prevent the attack.  Explain the
     options they have, and which one you would recommend.
+
+The first idea is to change the Montgomery multiplication algorithm to 
+always perform a reduction, simply discarding the result if the reduction 
+was not needed.
+
+The second idea is to use blinding. Blinding exploits the malleability of 
+RSA to partially randomise the data being processed, done by multiplying 
+the numbers by a randomly selected value at the start of the computation and 
+then multiply the result at the end by the inverse of the random starting 
+value. This method would be preferred as it would make it so that the 
+attacker would be unable to simulate the internal calculations of the server.
+This means that they would be unable to exploit timings in an attack at all.
+
 Q.2 Let n denote the number of simulated clock cycles required to execute a
     Montgomery multiplication on the attack target.  Estimate the value of
     n (as accurately as you can) and explain how you did so.
+
+The attack target uses a 64 bit processor and works on 1024 bit numbers 
+(bit size of N). Large numbers are stored as arrays of maximum size s of 
+64 bit numbers. For 1024 bit numbers s = 16.
+
+According to Koc et al. (Analysing and Comparing Montgomery Multiplication 
+Algorithms), the CIOS method takes:
+
+    2s^2 + s            Multiplications     3 cycles
+    4s^2 + 4s + 2       Additions           1 cycle
+    6s^2 + 7s + 2       Reads               1 cycle
+    2s^2 + 5s + 1       Writes              1 cycle
+
+With s=16 this results in 3861 clock cycles for one Montgomery 
+Multiplication, though this is likely an upper bound since, due to the 
+fact that multiple multiplications are being performed (since each number 
+has multiple limbs), the number of cycles for a multiplication could likely 
+be lower due to optimisations such as pipelining.
+
 Q.4 Given that you selected one particular statistical test within your
     implementation of this attack, explain what other options you had.
     What advantages and disadvantages does the option selected have?
+
+Due mainly to time constraints the statistical test I chose to use was 
+the comparison to the average of multiple message samples. An alternative 
+option that I had was to use some kind of statistical test based on data 
+gathered from the device replica R. For example if I had estimated the 
+variance for timing results using R then I could have used a chi squared 
+test. It is unclear if this would have provided much of an improvement to 
+the simple mean comparison and would have added some amount of time to the 
+attack depending on the amount of samples used to estimate variance.
+
 Q.8 The level of noise, n, within measurements of execution time will
     influence the number of measurements, m, required for a successful
     attack.  Explain what the relationship between n and m is (i.e., how
     you expect m to grow as n grows).
+
+A higher level of noise means that more measurements must be taken to 
+ensure that the noise is not affecting the overall result. Extra 
+measurements can be taken either by increasing the number of messages in 
+the overall sample or increasing the number of timings taken for each 
+message and using an average. The later option means that more calculations
+will be required but with the results being stored each round this is a 
+manageable time increase. Averaging multiple results per message would add 
+time dependent on how fast the timings can be calculated.

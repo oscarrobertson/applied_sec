@@ -3,13 +3,13 @@ Q.1 Consider an example where N = 551, e = 5, d = 101 and c = 243.  Using
     this attack (i.e., how and why it works).
 
 The key to the attack is the malleability of RSA and error codes giving 
-away information about the resulting decryption of modified cipertexts. 
+away information about the resulting decryption of modified ciphertexts. 
 Given that messages must contain two leading zero bits they must be 
 < B where B = 2^(k-2) and k = bit length of N.
 An error code of 2 (when the wrong label is passed) indicates that the 
-resulting decrypted message from the given cipertext is < B. An error 
-code of 1 indicates that the decrypted cipertext is >= B. We test the 
-error codes on modified cipertexts which decrypt to the message multiplied 
+resulting decrypted message from the given ciphertext is < B. An error 
+code of 1 indicates that the decrypted ciphertext is >= B. We test the 
+error codes on modified ciphertexts which decrypt to the message multiplied 
 by some factor, f, this is done by multiplying c by f^e.
 
 The first factor is f1. Starting at 2 we continue to multiply f1 by two 
@@ -49,17 +49,19 @@ Q.3 Ignoring the use of countermeasures, carefully detail any situations
     where your implementation of this attack could fail; given more time,
     what could you do to resolve this?
 
-
+This attack could fail if 2B >= n since the possible range in which f.m can lie 
+can become split into two segments. This would complicate the choice of multiples 
+to use but with some modification the attack would still work.
 
 Q.5 Explain how the concept of plaintext awareness relates to this attack.
 
-Plaintext awareness means that an encrypter must be aware of the contents of 
-a message in order to efficiently generate a valid cipertext. RSA is malleable 
+Plaintext awareness means that an encryptor must be aware of the contents of 
+a message in order to efficiently generate a valid ciphertext. RSA is malleable 
 and therefore this scheme uses padding in order to introduce plaintext 
 awareness. The issue with this system is that the label passed with the 
-cipertext need not be valid in order to garner the information needed for the 
+ciphertext need not be valid in order to garner the information needed for the 
 attack and is therefore not providing any security in this case. If the validity 
-of the whole cipertext (including the label) was checked earlier then this 
-attack owuld not be possible in this manner since the attack is unable to generate 
+of the whole ciphertext (including the label) was checked earlier then this 
+attack would not be possible in this manner since the attack is unable to generate 
 valid labels for their modified ciphertexts and the oracle queries would simply 
 be rejected.
